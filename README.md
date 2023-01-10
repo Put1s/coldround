@@ -1,2 +1,2 @@
-# coldround
-Coldround Game (based on Hotline Miami)
+# Coldround Game
+(based on Hotline Miami)
