@@ -103,6 +103,7 @@ class Launcher(QMainWindow):
         if __name__ == '__main__':
             PlayerX, PlayerY = 850, 550
             PlayerVX, PlayerVY = 0, 0
+            MouseX, MouseY = 0, 0
             FPS = 60
             acceleration = 0.4
             max_speed = 8
@@ -115,31 +116,16 @@ class Launcher(QMainWindow):
                         running = False
                     elif event.type == pygame.MOUSEMOTION:
                         MouseX, MouseY = event.pos
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        if menu == 'main' and button_start.rect.collidepoint(MouseX, MouseY):
-                            menu = 'no'
-                            cursor.image = cursor.image = load_image("cursor2.png", -1)
-                            cursor.rect = cursor.image.get_rect()
-                    if menu == 'main':
-                        if event.type == pygame.MOUSEBUTTONDOWN and button_start.rect.collidepoint(MouseX, MouseY):
-                            menu = 'no'
-                            cursor.image = cursor.image = load_image("cursor2.png", -1)
-                            cursor.rect = cursor.image.get_rect()
-                    elif menu == 'no':
-                        if event.type == pygame.K_d and PlayerVX >= -max_speed:
-                            PlayerVX -= acceleration
-                        elif event.type == pygame.K_a and PlayerVX <= max_speed:
-                            PlayerVX += acceleration
-                        else:
-                            PlayerVX = PlayerVX * 0.9
-                        if event.type == pygame.K_w and PlayerVY <= max_speed:
-                            PlayerVY += acceleration
-                        elif event.type == pygame.K_s and PlayerVY >= -max_speed:
-                            PlayerVY -= acceleration
-                        else:
-                            PlayerVY = PlayerVY * 0.9
+                    elif menu == 'main' and event.type == pygame.MOUSEBUTTONDOWN and \
+                            button_start.rect.collidepoint(MouseX, MouseY):
+                        menu = 'no'
+                        cursor.image = cursor.image = load_image("cursor2.png", -1)
+                        cursor.rect = cursor.image.get_rect()
+
                 if pygame.mouse.get_focused():
                     pygame.mouse.set_visible(False)
+
+                keys = pygame.key.get_pressed()
 
                 if menu == 'main':
                     menu_sprites.draw(screen)
@@ -150,6 +136,18 @@ class Launcher(QMainWindow):
                     pygame.time.Clock().tick(FPS)
 
                 elif menu == 'no':
+                    if keys[pygame.K_d] and PlayerVX >= -max_speed:
+                        PlayerVX -= acceleration
+                    elif keys[pygame.K_a] and PlayerVX <= max_speed:
+                        PlayerVX += acceleration
+                    else:
+                        PlayerVX = PlayerVX * 0.9
+                    if keys[pygame.K_w] and PlayerVY <= max_speed:
+                        PlayerVY += acceleration
+                    elif keys[pygame.K_s] and PlayerVY >= -max_speed:
+                        PlayerVY -= acceleration
+                    else:
+                        PlayerVY = PlayerVY * 0.9
                     PlayerX += int(PlayerVX)  # проверка столкновений со стенами
                     walls.rect.center = PlayerX, PlayerY
                     if pygame.sprite.collide_mask(player, walls):
