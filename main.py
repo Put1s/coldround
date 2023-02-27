@@ -1,5 +1,5 @@
 import keyboard as kb
-import mouse as m
+# import mouse as m
 import os
 import sys
 import pygame
@@ -23,7 +23,6 @@ class Launcher(QMainWindow):
         self.ComboBox.setCurrentIndex(0)
         self.ComboBox.currentIndexChanged.connect(self.combo_changed)
 
-
     def exit(self):
         exit(0)
 
@@ -33,6 +32,7 @@ class Launcher(QMainWindow):
 
     def launch(self):
         self.hide()
+
         def load_image(name, colorkey=None):
             fullname = os.path.join('data', name)
             image = pygame.image.load(fullname)
@@ -45,23 +45,21 @@ class Launcher(QMainWindow):
             else:
                 image = image.convert_alpha()
             return image
-        
-        
-        pygame.init()                              # начало кода самой игры
+
+        pygame.init()  # начало кода самой игры
         pygame.display.set_caption('Sussy Baki')
         size = WindowWidth, WindowHeight
         screen = pygame.display.set_mode(size)
-        
+
         all_sprites = pygame.sprite.Group()
 
         # просто курсор
         cursor_sprite = pygame.sprite.Group()
-        
+
         cursor = pygame.sprite.Sprite()
         cursor.image = load_image("cursor.png", -1)
         cursor.rect = cursor.image.get_rect()
-        cursor_sprite.add(cursor)        
-
+        cursor_sprite.add(cursor)
 
         # менюшные спрайты
         menu_sprites = pygame.sprite.Group()
@@ -78,16 +76,13 @@ class Launcher(QMainWindow):
         button_start.rect.center = WindowWidth / 2, WindowHeight / 2 - 200
         menu_sprites.add(button_start)
 
-        
-        final_menu_sprites = pygame.sprite.Group() # для финального меню
+        final_menu_sprites = pygame.sprite.Group()  # для финального меню
 
         final_menu = pygame.sprite.Sprite()
         final_menu.image = load_image("final menu.png")
         final_menu.rect = final_menu.image.get_rect()
         final_menu.rect.center = WindowWidth / 2, WindowHeight / 2
         final_menu_sprites.add(final_menu)
-
-
 
         # группа спрайтов для игрового уровня (пола, стен ...)
         level_sprites = pygame.sprite.Group()
@@ -102,7 +97,7 @@ class Launcher(QMainWindow):
         walls.rect = walls.image.get_rect()
         walls.mask = pygame.mask.from_surface(walls.image)
         level_sprites.add(walls)
-        
+
         door = pygame.sprite.Sprite()
         door.image = load_image("door.png", -1)
         door.rect = door.image.get_rect()
@@ -115,8 +110,6 @@ class Launcher(QMainWindow):
         player.rect = player.image.get_rect()
         player.mask = pygame.mask.from_surface(player.image)
         level_sprites.add(player)
-
-
 
         if __name__ == '__main__':
             PlayerX, PlayerY = 850, 550
@@ -136,7 +129,6 @@ class Launcher(QMainWindow):
                 if pygame.mouse.get_focused():
                     pygame.mouse.set_visible(False)
 
-                
                 if menu == 'main':
                     if m.is_pressed() and button_start.rect.collidepoint(MouseX, MouseY):
                         menu = 'no'
@@ -164,7 +156,7 @@ class Launcher(QMainWindow):
                     else:
                         PlayerVY = PlayerVY * 0.9
 
-                    PlayerX += int(PlayerVX) # проверка столкновений со стенами
+                    PlayerX += int(PlayerVX)  # проверка столкновений со стенами
                     walls.rect.center = PlayerX, PlayerY
                     if pygame.sprite.collide_mask(player, walls):
                         PlayerX -= int(PlayerVX)
@@ -183,28 +175,23 @@ class Launcher(QMainWindow):
                             PlayerX, PlayerY = 2600, 1500
                             floor.image = load_image("floor2.png", -1)
                             floor.rect = floor.image.get_rect()
-    
+
                             walls.image = load_image("walls2.png", -1)
                             walls.rect = walls.image.get_rect()
                             walls.mask = pygame.mask.from_surface(walls.image)
-    
+
                             door.image = load_image("door2.png", -1)
                             door.rect = door.image.get_rect()
                             door.mask = pygame.mask.from_surface(door.image)
                         else:
                             menu = 'final'
 
-
-
-                    MouseRelativeX, MouseRelativeY = MouseX - (WindowWidth // 2), MouseY - (WindowHeight // 2) #код поворота игрока
+                    MouseRelativeX, MouseRelativeY = MouseX - (WindowWidth // 2), MouseY - (
+                                WindowHeight // 2)  # код поворота игрока
                     PlayerAngle = (180 / math.pi) * -math.atan2(MouseRelativeY, MouseRelativeX)
                     player.image = pygame.transform.rotate(PlayerOrigImage, int(PlayerAngle))
                     player.mask = pygame.mask.from_surface(player.image)
                     player.rect = player.image.get_rect(center=((WindowWidth // 2), (WindowHeight // 2)))
-
-
-                    
-
 
                     walls.rect.center = PlayerX, PlayerY
                     player.rect.center = WindowWidth // 2, WindowHeight // 2
@@ -218,20 +205,18 @@ class Launcher(QMainWindow):
                     pygame.time.Clock().tick(FPS)
 
                 if menu == 'final':
-
                     final_menu_sprites.draw(screen)
                     cursor_sprite.draw(screen)
                     cursor.rect.center = MouseX, MouseY
                     pygame.display.flip()
                     screen.fill('BLACK')
-                    pygame.time.Clock().tick(FPS)   
+                    pygame.time.Clock().tick(FPS)
             pygame.quit()
             sys.exit()
 
 
 if __name__ == '__main__':
-    app=QApplication(sys.argv)
-    window=Launcher()
+    app = QApplication(sys.argv)
+    window = Launcher()
     window.show()
     sys.exit(app.exec_())
-
