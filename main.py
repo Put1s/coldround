@@ -2,11 +2,46 @@ import os
 import sys
 import pygame
 import math
+
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QMainWindow
 
 
-class Launcher(QMainWindow):
+class Game(QMainWindow):
+    class Entity:
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+
+    class Coin(Entity):
+        def __init__(self, x, y):
+            super().__init__(x, y)
+
+        def pick_up(self):
+            self.kill()
+
+    class Spikes(Entity):
+        def __init__(self, x, y):
+            super().__init__(x, y)
+
+    class Field:
+        def __init__(self):
+            self.coins = [
+                # ...
+            ]
+            self.spikes = [
+                # ...
+            ]
+
+        def collide(self, player):
+            for coin in self.coins:
+                if pygame.sprite.collide_mask(player, coin):
+                    coin.pick()
+            for spikes in self.spikes:
+                if pygame.sprite.collide_mask(player, coin):
+                    return True
+            return False
+
     def __init__(self):
         super().__init__()
         uic.loadUi('UI.ui', self)
@@ -14,7 +49,8 @@ class Launcher(QMainWindow):
         self.ExitButton.clicked.connect(self.exit)
         self.ComboBox.setCurrentIndex(0)
 
-    def exit(self):
+    @staticmethod
+    def exit():
         exit(0)
 
     def launch(self):
@@ -35,7 +71,7 @@ class Launcher(QMainWindow):
                 image = image.convert_alpha()
             return image
 
-        pygame.init()  # начало кода самой игры
+        pygame.init()
         pygame.display.set_caption('Sussy Baki')
         size = windowWidth, windowHeight
         screen = pygame.display.set_mode(size)
@@ -65,7 +101,8 @@ class Launcher(QMainWindow):
         button_start.rect.center = windowWidth / 2, windowHeight / 2 - 200
         menu_sprites.add(button_start)
 
-        final_menu_sprites = pygame.sprite.Group()  # для финального меню
+        # для финального меню
+        final_menu_sprites = pygame.sprite.Group()
 
         final_menu = pygame.sprite.Sprite()
         final_menu.image = load_image("final menu.png")
@@ -108,17 +145,17 @@ class Launcher(QMainWindow):
             acceleration = 0.4
             max_speed = 8
             running = True
-            menu = 'main'
-            level = 1
+            state = ['main_menu', 1]  # [menu, level]
+
             while running:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
                     elif event.type == pygame.MOUSEMOTION:
                         MouseX, MouseY = event.pos
-                    elif menu == 'main' and event.type == pygame.MOUSEBUTTONDOWN and \
+                    elif state[0] == 'main_menu' and event.type == pygame.MOUSEBUTTONDOWN and \
                             button_start.rect.collidepoint(MouseX, MouseY):
-                        menu = 'no'
+                        state[0] = 'game'
                         cursor.image = cursor.image = load_image("cursor2.png", -1)
                         cursor.rect = cursor.image.get_rect()
 
@@ -127,7 +164,7 @@ class Launcher(QMainWindow):
 
                 keys = pygame.key.get_pressed()
 
-                if menu == 'main':
+                if state[0] == 'main_menu':
                     menu_sprites.draw(screen)
                     cursor_sprite.draw(screen)
                     cursor.rect.center = MouseX, MouseY
@@ -135,7 +172,7 @@ class Launcher(QMainWindow):
                     screen.fill('BLACK')
                     pygame.time.Clock().tick(FPS)
 
-                elif menu == 'no':
+                elif state[0] == 'game':
                     if keys[pygame.K_d] and PlayerVX >= -max_speed:
                         PlayerVX -= acceleration
                     elif keys[pygame.K_a] and PlayerVX <= max_speed:
@@ -162,8 +199,8 @@ class Launcher(QMainWindow):
 
                     # проверка коллизии с переходом на следующий уроваень
                     if pygame.sprite.collide_mask(player, door):
-                        if level == 1:
-                            level = 2
+                        if state[1] == 1:
+                            state[1] = 2
                             PlayerX, PlayerY = 2600, 1500
                             floor.image = load_image("floor2.png", -1)
                             floor.rect = floor.image.get_rect()
@@ -176,7 +213,7 @@ class Launcher(QMainWindow):
                             door.rect = door.image.get_rect()
                             door.mask = pygame.mask.from_surface(door.image)
                         else:
-                            menu = 'final'
+                            state[0] = 'final_menu'
 
                     MouseRelativeX, MouseRelativeY = MouseX - (windowWidth // 2), MouseY - (
                             windowHeight // 2)  # код поворота игрока
@@ -196,9 +233,10 @@ class Launcher(QMainWindow):
                     screen.fill('BLACK')
                     pygame.time.Clock().tick(FPS)
 
-                if menu == 'final':
+                elif state[0] == 'final_menu':
                     final_menu_sprites.draw(screen)
                     cursor_sprite.draw(screen)
+                    cursor.image = load_image("cursor.png", -1)
                     cursor.rect.center = MouseX, MouseY
                     pygame.display.flip()
                     screen.fill('BLACK')
@@ -209,6 +247,6 @@ class Launcher(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = Launcher()
+    window = Game()
     window.show()
     sys.exit(app.exec_())
