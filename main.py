@@ -48,7 +48,7 @@ class Launcher(QMainWindow):
         
         
         pygame.init()                              # начало кода самой игры
-        pygame.display.set_caption('Hotline Maiami 3')
+        pygame.display.set_caption('Sussy Baki')
         size = WindowWidth, WindowHeight
         screen = pygame.display.set_mode(size)
         
@@ -73,10 +73,19 @@ class Launcher(QMainWindow):
         menu_sprites.add(menu)
 
         button_start = pygame.sprite.Sprite()
-        button_start.image = load_image("shizofreniya.png")
+        button_start.image = load_image("ButtonStartGame.png")
         button_start.rect = button_start.image.get_rect()
-        button_start.rect.center = WindowWidth / 2, WindowHeight / 2
+        button_start.rect.center = WindowWidth / 2, WindowHeight / 2 - 200
         menu_sprites.add(button_start)
+
+        
+        final_menu_sprites = pygame.sprite.Group() # для финального меню
+
+        final_menu = pygame.sprite.Sprite()
+        final_menu.image = load_image("final menu.png")
+        final_menu.rect = final_menu.image.get_rect()
+        final_menu.rect.center = WindowWidth / 2, WindowHeight / 2
+        final_menu_sprites.add(final_menu)
 
 
 
@@ -84,7 +93,7 @@ class Launcher(QMainWindow):
         level_sprites = pygame.sprite.Group()
 
         floor = pygame.sprite.Sprite()
-        floor.image = load_image("фон.png")
+        floor.image = load_image("floor.png", -1)
         floor.rect = floor.image.get_rect()
         level_sprites.add(floor)
 
@@ -93,24 +102,31 @@ class Launcher(QMainWindow):
         walls.rect = walls.image.get_rect()
         walls.mask = pygame.mask.from_surface(walls.image)
         level_sprites.add(walls)
+        
+        door = pygame.sprite.Sprite()
+        door.image = load_image("door.png", -1)
+        door.rect = door.image.get_rect()
+        door.mask = pygame.mask.from_surface(door.image)
+        level_sprites.add(door)
 
         player = pygame.sprite.Sprite()
-        PlayerOrigImage = load_image("смешарик.png", -1)
-        player.image = load_image("смешарик.png", -1)
+        PlayerOrigImage = load_image("player.png", -1)
+        player.image = load_image("player.png", -1)
         player.rect = player.image.get_rect()
         player.mask = pygame.mask.from_surface(player.image)
         level_sprites.add(player)
 
 
-        
+
         if __name__ == '__main__':
-            PlayerX, PlayerY = 200, 400
+            PlayerX, PlayerY = 850, 550
             PlayerVX, PlayerVY = 0, 0
             FPS = 60
             acceleration = 0.4
             max_speed = 8
             running = True
             menu = 'main'
+            level = 1
             while running:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -134,7 +150,7 @@ class Launcher(QMainWindow):
                     pygame.time.Clock().tick(FPS)
 
 
-                else:
+                elif menu == 'no':
                     if kb.is_pressed('d') and PlayerVX >= -max_speed:
                         PlayerVX -= acceleration
                     elif kb.is_pressed('a') and PlayerVX <= max_speed:
@@ -148,8 +164,7 @@ class Launcher(QMainWindow):
                     else:
                         PlayerVY = PlayerVY * 0.9
 
-                        
-                    PlayerX += int(PlayerVX)
+                    PlayerX += int(PlayerVX) # проверка столкновений со стенами
                     walls.rect.center = PlayerX, PlayerY
                     if pygame.sprite.collide_mask(player, walls):
                         PlayerX -= int(PlayerVX)
@@ -161,23 +176,55 @@ class Launcher(QMainWindow):
                         PlayerY -= int(PlayerVY)
                         PlayerVY = 0
 
-                    MouseRelativeX, MouseRelativeY = MouseX - (WindowWidth // 2), MouseY - (WindowHeight // 2)
+                    # проверка коллизии с переходом на следующий уроваень
+                    if pygame.sprite.collide_mask(player, door):
+                        if level == 1:
+                            level = 2
+                            PlayerX, PlayerY = 2600, 1500
+                            floor.image = load_image("floor2.png", -1)
+                            floor.rect = floor.image.get_rect()
+    
+                            walls.image = load_image("walls2.png", -1)
+                            walls.rect = walls.image.get_rect()
+                            walls.mask = pygame.mask.from_surface(walls.image)
+    
+                            door.image = load_image("door2.png", -1)
+                            door.rect = door.image.get_rect()
+                            door.mask = pygame.mask.from_surface(door.image)
+                        else:
+                            menu = 'final'
+
+
+
+                    MouseRelativeX, MouseRelativeY = MouseX - (WindowWidth // 2), MouseY - (WindowHeight // 2) #код поворота игрока
                     PlayerAngle = (180 / math.pi) * -math.atan2(MouseRelativeY, MouseRelativeX)
                     player.image = pygame.transform.rotate(PlayerOrigImage, int(PlayerAngle))
                     player.mask = pygame.mask.from_surface(player.image)
                     player.rect = player.image.get_rect(center=((WindowWidth // 2), (WindowHeight // 2)))
+
+
                     
 
 
                     walls.rect.center = PlayerX, PlayerY
                     player.rect.center = WindowWidth // 2, WindowHeight // 2
                     floor.rect.center = PlayerX, PlayerY
+                    door.rect.center = PlayerX, PlayerY
                     cursor.rect.center = MouseX + 2, MouseY + 2
                     level_sprites.draw(screen)
                     cursor_sprite.draw(screen)
                     pygame.display.flip()
                     screen.fill('BLACK')
                     pygame.time.Clock().tick(FPS)
+
+                if menu == 'final':
+
+                    final_menu_sprites.draw(screen)
+                    cursor_sprite.draw(screen)
+                    cursor.rect.center = MouseX, MouseY
+                    pygame.display.flip()
+                    screen.fill('BLACK')
+                    pygame.time.Clock().tick(FPS)   
             pygame.quit()
             sys.exit()
 
