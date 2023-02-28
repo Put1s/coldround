@@ -44,112 +44,6 @@ class Game(QMainWindow):
         size = windowWidth, windowHeight
         screen = pygame.display.set_mode(size)
 
-        class Entity:
-            def __init__(self, x_, y_):
-                self.entity = pygame.sprite.Sprite()
-                self.entity.image = load_image("cat.png", -1)
-                self.entity.rect = self.entity.image.get_rect()
-                self.entity.rect.center = x_, y_
-                self.x = x_
-                self.y = y_
-
-            def set_image(self, image_, path_=None):
-                if path_ is None:
-                    self.entity.image = load_image(image_, -1)
-                else:
-                    self.entity.image = load_image(os.path.join(path_, image_), -1)
-                self.entity.rect = self.entity.image.get_rect()
-                self.entity.mask = pygame.mask.from_surface(self.entity.image)
-
-            def update_pos(self, PlayerX_, PlayerY_):
-                self.entity.rect.center = self.x + PlayerX_, self.y + PlayerY_
-
-        class Coin(Entity):
-            def __init__(self, x, y):
-                super().__init__(x, y)
-                self.state = 0
-                self.states = 6
-
-            def pick_up(self):
-                self.kill()
-
-            def animate(self):
-                self.state += 1
-                if self.state == self.states:
-                    self.state = 0
-                self.set_image(str(self.state) + ".png", "coin")
-
-        class Spikes(Entity):
-            def __init__(self, x, y):
-                super().__init__(x, y)
-                self.set_image("spikes.png")
-
-        class Level:
-            def __init__(self, level_id_, coins_, spikes_):
-                self.id = level_id_
-                self.coins = coins_
-                self.spikes = spikes_
-                self.sprites_group = pygame.sprite.Group()
-                for coin_ in coins_:
-                    self.sprites_group.add(coin_.entity)
-                for spikes_ in self.spikes:
-                    self.sprites_group.add(spikes_.entity)
-
-            def update(self, PlayerX_, PlayerY_):
-                for coin_ in self.coins:
-                    coin_.update_pos(PlayerX_, PlayerY_)
-                    coin_.animate()
-                for spikes_ in self.spikes:
-                    spikes_.update_pos(PlayerX_, PlayerY_)
-
-            def collide(self, player_):
-                for coin_ in self.coins:
-                    if pygame.sprite.collide_mask(player_, coin_):
-                        coin_.pick_up()
-                for spikes_ in self.spikes:
-                    if pygame.sprite.collide_mask(player_, spikes_):
-                        return True
-                return False
-
-            def show(self, screen_):
-                self.sprites_group.show(screen_)
-
-        class Levels:
-            def __init__(self, start_level_):
-                self.level = start_level_
-                self.levels = [
-                    Level(
-                        1,
-                        [Coin(228, 1337), Coin(1337, 228)],
-                        [Spikes(100, 2000), Spikes(-225, 1000)]
-                    ),
-                    Level(
-                        2,
-                        [Coin(1000, 1000), Coin(0, 0), Coin(50, 0), Coin(100, 0)],
-                        [Spikes(-500, 2000), Spikes(2000, 2000), Spikes(2000, 2050), Spikes(2000, 2100)]
-                    ),
-                ]
-
-            def next(self):
-                self.level += 1
-
-            def previous(self):
-                self.level -= 1
-
-            def set_level(self, level_):
-                self.level = level_
-
-            def update(self, player_, PlayerX_, PlayerY_):
-                print(player_, PlayerX_, PlayerY_)
-                self.levels[self.level].update(PlayerX_, PlayerY_)
-                return self.levels[self.level].collide(player_)
-
-            def draw(self):
-                global screen
-                self.levels[self.level].draw(screen)
-
-        levels = Levels(1)
-
         main_menu_music = os.path.join("data", "sussy_baka.mp3")
         ambient = os.path.join("data", "ambient.mp3")
         final_menu_music = os.path.join("data", "social_credits.mp3")
@@ -227,6 +121,108 @@ class Game(QMainWindow):
         # coin.mask = pygame.mask.from_surface(coin.image)
         # coin.rect.center = 123123, 123123
         # level_sprites.add(coin)
+
+        class Entity:
+            def __init__(self, x_, y_):
+                self.entity = pygame.sprite.Sprite()
+                self.entity.image = load_image("cat.png", -1)
+                self.entity.rect = self.entity.image.get_rect()
+                self.entity.rect.center = x_, y_
+                self.x = x_
+                self.y = y_
+
+            def set_image(self, image_):
+                self.entity.image = load_image(image_, -1)
+                self.entity.rect = self.entity.image.get_rect()
+                self.entity.mask = pygame.mask.from_surface(self.entity.image)
+
+            def update_pos(self, PlayerX_, PlayerY_):
+                self.entity.rect.center = self.x + PlayerX_, self.y + PlayerY_
+
+        class Coin(Entity):
+            def __init__(self, x_, y_):
+                super().__init__(x_, y_)
+                self.state = 0
+                self.states = 6
+                self.animate()
+
+            def pick_up(self):
+                self.entity.kill()
+
+            def animate(self):
+                self.state += 1
+                if self.state == self.states:
+                    self.state = 0
+                self.set_image("coin/" + str(self.state) + ".png")
+
+        class Spikes(Entity):
+            def __init__(self, x, y):
+                super().__init__(x, y)
+                self.set_image("spikes.png")
+
+        class Level:
+            def __init__(self, level_id_, coins_, spikes_):
+                self.id = level_id_
+                self.coins = coins_
+                self.spikes = spikes_
+                self.sprites_group = pygame.sprite.Group()
+                for coin_ in coins_:
+                    self.sprites_group.add(coin_.entity)
+                for spikes_ in self.spikes:
+                    self.sprites_group.add(spikes_.entity)
+
+            def update(self, PlayerX_, PlayerY_):
+                for coin_ in self.coins:
+                    coin_.update_pos(PlayerX_, PlayerY_)
+                    coin_.animate()
+                for spikes_ in self.spikes:
+                    spikes_.update_pos(PlayerX_, PlayerY_)
+
+            def collide(self, player_):
+                for coin_ in self.coins:
+                    if pygame.sprite.collide_mask(player_, coin_.entity):
+                        coin_.pick_up()
+                for spikes_ in self.spikes:
+                    if pygame.sprite.collide_mask(player_, spikes_.entity):
+                        return True
+                return False
+
+            def draw(self, screen_):
+                self.sprites_group.draw(screen_)
+
+        class Levels:
+            def __init__(self, start_level_):
+                self.level = start_level_
+                self.levels = [
+                    Level(
+                        1,
+                        [Coin(228, 1337), Coin(1337, 228)],
+                        [Spikes(100, 2000), Spikes(-225, 1000)]
+                    ),
+                    Level(
+                        2,
+                        [Coin(1000, 1000), Coin(0, 0), Coin(50, 0), Coin(100, 0)],
+                        [Spikes(-500, 2000), Spikes(2000, 2000), Spikes(2000, 2050), Spikes(2000, 2100)]
+                    ),
+                ]
+
+            def next(self):
+                self.level += 1
+
+            def previous(self):
+                self.level -= 1
+
+            def set_level(self, level_):
+                self.level = level_
+
+            def update(self, player_, PlayerX_, PlayerY_):
+                self.levels[self.level].update(PlayerX_, PlayerY_)
+                return self.levels[self.level].collide(player_)
+
+            def draw(self, screen_):
+                self.levels[self.level].draw(screen_)
+
+        floors = Levels(1)
 
         if __name__ == "__main__":
             PlayerX, PlayerY = 850, 550
@@ -320,11 +316,10 @@ class Game(QMainWindow):
                     door.rect.center = PlayerX, PlayerY
                     cursor.rect.center = MouseX + 2, MouseY + 2
                     # coin.rect.center = PlayerX, PlayerY
-                    print(player, PlayerX, PlayerY)
-                    Levels.update(player, PlayerX, PlayerY, 123)
+                    floors.update(player, PlayerX, PlayerY)
                     level_sprites.draw(screen)
                     cursor_sprite.draw(screen)
-                    Levels.draw()
+                    floors.draw(screen)
                     pygame.display.flip()
                     screen.fill("BLACK")
                     pygame.time.Clock().tick(FPS)
