@@ -162,9 +162,10 @@ class Game(QMainWindow):
                 self.set_image("spikes.png")
 
         class Level:
-            def __init__(self, level_name_, size_, coins_, spikes_):
+            def __init__(self, level_name_, left_up_, right_down_, coins_, spikes_):
                 self.name = level_name_
-                self.size = size_
+                self.left_up = left_up_
+                self.right_down = right_down_
                 self.coins = coins_
                 self.spikes = spikes_
                 self.sprites_group = pygame.sprite.Group()
@@ -219,17 +220,21 @@ class Game(QMainWindow):
             def __init__(self, start_level_):
                 self.level = start_level_ - 1
                 self.configure = [
-                    ("First floor", (1, 1), 20, 10)
-                    # ("Second floor", (4254, 2646), 100, 30)
+                    # имя, левый верхний угол и правый нижний угол спавна энтити, кол-во монет, кол-во шипов
+                    # TODO: подобрать координаты спавна энтити чтобы на двух этажах норм спавнилось
+                    ("First floor", (0, 0), (500, 800), 20, 10),
+                    ("Second floor", (0, 0), (4254, 2646), 100, 30)
                 ]
                 self.levels = list()
                 for level_ in self.configure:
                     self.levels.append(
-                        Level(level_[0], level_[1],
-                              [Coin(random.randint(0, level_[1][0]), random.randint(0, level_[1][1]))
-                               for i in range(level_[2])],
-                              [Spikes(random.randint(0, level_[1][0]), random.randint(0, level_[1][1]))
-                               for i in range(level_[3])]
+                        Level(level_[0], level_[1], level_[2],
+                              [Coin(random.randint(level_[1][0], level_[2][0]),
+                                    random.randint(level_[1][1], level_[2][1]))
+                               for i in range(level_[3])],
+                              [Spikes(random.randint(level_[1][0], level_[2][0]),
+                                      random.randint(level_[1][1], level_[2][1]))
+                               for i in range(level_[4])]
                               )
                     )
 
@@ -245,11 +250,15 @@ class Game(QMainWindow):
             def reset(self):
                 for i, level_ in enumerate(self.levels):
                     level_.set_coins(
-                        [Coin(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
-                         for j in range(self.configure[i][2])])
+                        [Coin(random.randint(self.configure[i][1][0], self.configure[i][2][0]),
+                              random.randint(self.configure[i][1][1], self.configure[i][2][1]))
+                         for j in range(self.configure[i][3])]
+                    )
                     level_.set_spikes(
-                        [Spikes(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
-                         for j in range(self.configure[i][3])])
+                        [Spikes(random.randint(self.configure[i][1][0], self.configure[i][2][0]),
+                                random.randint(self.configure[i][1][1], self.configure[i][2][1]))
+                         for j in range(self.configure[i][4])]
+                    )
                     # level_.reset(
                     #     [Coin(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
                     #      for j in range(self.configure[i][2])],
