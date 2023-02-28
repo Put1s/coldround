@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QMainWindow
 
 
 def load_image(name, colorKey=None):
+    print(type(name), name)
     fullname = os.path.join("data", name)
     image = pygame.image.load(fullname)
 
@@ -19,108 +20,6 @@ def load_image(name, colorKey=None):
     else:
         image = image.convert_alpha()
     return image
-
-
-class Entity:
-    def __init__(self, x, y):
-        self.entity = pygame.sprite.Sprite()
-        self.entity.rect.center = x, y
-        self.x = x
-        self.y = y
-
-    def set_image(self, image, path=None):
-        self.entity.image = load_image(os.path.join(path, image), -1)
-        self.entity.rect = self.entity.image.get_rect()
-        self.entity.mask = pygame.mask.from_surface(self.entity.image)
-
-    def update_pos(self, PlayerX, PlayerY):
-        self.entity.rect.center = self.x + PlayerX, self.y + PlayerY
-
-
-class Coin(Entity):
-    def __init__(self, x, y):
-        super().__init__(x, y)
-        self.state = 0
-        self.states = 6
-
-    def pick_up(self):
-        self.kill()
-
-    def animate(self):
-        self.state += 1
-        if self.state == self.states:
-            self.state = 0
-        self.set_image(str(self.state) + ".png", "coin")
-
-
-class Spikes(Entity):
-    def __init__(self, x, y):
-        super().__init__(x, y)
-        self.set_image("spikes.png")
-
-
-class Level:
-    def __init__(self, level_id, coins, spikes):
-        self.id = level_id
-        self.coins = coins
-        self.spikes = spikes
-        self.sprites_group = pygame.sprite.Group()
-        for coin in coins:
-            self.sprites_group.add(coin.entity)
-        for spikes in self.spikes:
-            self.sprites_group.add(spikes.entity)
-
-    def update(self, PlayerX, PlayerY):
-        for coin in self.coins:
-            coin.update_pos(PlayerX, PlayerY)
-            coin.animate()
-        for spikes in self.spikes:
-            spikes.update_pos(PlayerX, PlayerY)
-
-    def collide(self, player):
-        for coin in self.coins:
-            if pygame.sprite.collide_mask(player, coin):
-                coin.pick_up()
-        for spikes in self.spikes:
-            if pygame.sprite.collide_mask(player, spikes):
-                return True
-        return False
-
-    def show(self, screen):
-        self.sprites_group.show(screen)
-
-
-class Levels:
-    def __init__(self, start_level):
-        self.level = start_level
-        self.levels = [
-            Level(
-                1,
-                [Coin(228, 1337), Coin(1337, 228)],
-                [Spikes(100, 2000), Spikes(-225, 1000)]
-            ),
-            Level(
-                2,
-                [Coin(1000, 1000), Coin(0, 0), Coin(50, 0), Coin(100, 0)],
-                [Spikes(-500, 2000), Spikes(2000, 2000), Spikes(2000, 2050), Spikes(2000, 2100)]
-            ),
-        ]
-
-    def next(self):
-        self.level += 1
-
-    def previous(self):
-        self.level -= 1
-
-    def set_level(self, level):
-        self.level = level
-
-    def update(self, player, PlayerX, PlayerY):
-        self.levels[self.level].update(PlayerX, PlayerY)
-        return self.levels[self.level].collide(player)
-
-    def draw(self, screen):
-        self.levels[self.level].draw(screen)
 
 
 class Game(QMainWindow):
@@ -138,14 +37,118 @@ class Game(QMainWindow):
     def launch(self):
         self.hide()
 
-        levels = Levels(1)
-
         windowWidth, windowHeight = [(1280, 720), (1920, 1080), (1440, 900)][self.ComboBox.currentIndex()]
 
         pygame.init()
         pygame.display.set_caption("Sussy Baki")
         size = windowWidth, windowHeight
         screen = pygame.display.set_mode(size)
+
+        class Entity:
+            def __init__(self, x_, y_):
+                self.entity = pygame.sprite.Sprite()
+                self.entity.image = load_image("cat.png", -1)
+                self.entity.rect = self.entity.image.get_rect()
+                self.entity.rect.center = x_, y_
+                self.x = x_
+                self.y = y_
+
+            def set_image(self, image_, path_=None):
+                if path_ is None:
+                    self.entity.image = load_image(image_, -1)
+                else:
+                    self.entity.image = load_image(os.path.join(path_, image_), -1)
+                self.entity.rect = self.entity.image.get_rect()
+                self.entity.mask = pygame.mask.from_surface(self.entity.image)
+
+            def update_pos(self, PlayerX_, PlayerY_):
+                self.entity.rect.center = self.x + PlayerX_, self.y + PlayerY_
+
+        class Coin(Entity):
+            def __init__(self, x, y):
+                super().__init__(x, y)
+                self.state = 0
+                self.states = 6
+
+            def pick_up(self):
+                self.kill()
+
+            def animate(self):
+                self.state += 1
+                if self.state == self.states:
+                    self.state = 0
+                self.set_image(str(self.state) + ".png", "coin")
+
+        class Spikes(Entity):
+            def __init__(self, x, y):
+                super().__init__(x, y)
+                self.set_image("spikes.png")
+
+        class Level:
+            def __init__(self, level_id_, coins_, spikes_):
+                self.id = level_id_
+                self.coins = coins_
+                self.spikes = spikes_
+                self.sprites_group = pygame.sprite.Group()
+                for coin_ in coins_:
+                    self.sprites_group.add(coin_.entity)
+                for spikes_ in self.spikes:
+                    self.sprites_group.add(spikes_.entity)
+
+            def update(self, PlayerX_, PlayerY_):
+                for coin_ in self.coins:
+                    coin_.update_pos(PlayerX_, PlayerY_)
+                    coin_.animate()
+                for spikes_ in self.spikes:
+                    spikes_.update_pos(PlayerX_, PlayerY_)
+
+            def collide(self, player_):
+                for coin_ in self.coins:
+                    if pygame.sprite.collide_mask(player_, coin_):
+                        coin_.pick_up()
+                for spikes_ in self.spikes:
+                    if pygame.sprite.collide_mask(player_, spikes_):
+                        return True
+                return False
+
+            def show(self, screen_):
+                self.sprites_group.show(screen_)
+
+        class Levels:
+            def __init__(self, start_level_):
+                self.level = start_level_
+                self.levels = [
+                    Level(
+                        1,
+                        [Coin(228, 1337), Coin(1337, 228)],
+                        [Spikes(100, 2000), Spikes(-225, 1000)]
+                    ),
+                    Level(
+                        2,
+                        [Coin(1000, 1000), Coin(0, 0), Coin(50, 0), Coin(100, 0)],
+                        [Spikes(-500, 2000), Spikes(2000, 2000), Spikes(2000, 2050), Spikes(2000, 2100)]
+                    ),
+                ]
+
+            def next(self):
+                self.level += 1
+
+            def previous(self):
+                self.level -= 1
+
+            def set_level(self, level_):
+                self.level = level_
+
+            def update(self, player_, PlayerX_, PlayerY_):
+                print(player_, PlayerX_, PlayerY_)
+                self.levels[self.level].update(PlayerX_, PlayerY_)
+                return self.levels[self.level].collide(player_)
+
+            def draw(self):
+                global screen
+                self.levels[self.level].draw(screen)
+
+        levels = Levels(1)
 
         main_menu_music = os.path.join("data", "sussy_baka.mp3")
         ambient = os.path.join("data", "ambient.mp3")
@@ -218,12 +221,12 @@ class Game(QMainWindow):
         player.mask = pygame.mask.from_surface(player.image)
         level_sprites.add(player)
 
-        coin = pygame.sprite.Sprite()
-        coin.image = load_image("coin/0.png", -1)
-        coin.rect = coin.image.get_rect()
-        coin.mask = pygame.mask.from_surface(coin.image)
-        coin.rect.center = 123123, 123123
-        level_sprites.add(coin)
+        # coin = pygame.sprite.Sprite()
+        # coin.image = load_image("coin/0.png", -1)
+        # coin.rect = coin.image.get_rect()
+        # coin.mask = pygame.mask.from_surface(coin.image)
+        # coin.rect.center = 123123, 123123
+        # level_sprites.add(coin)
 
         if __name__ == "__main__":
             PlayerX, PlayerY = 850, 550
@@ -316,11 +319,12 @@ class Game(QMainWindow):
                     floor.rect.center = PlayerX, PlayerY
                     door.rect.center = PlayerX, PlayerY
                     cursor.rect.center = MouseX + 2, MouseY + 2
-                    coin.rect.center = PlayerX, PlayerY
-                    Levels.update(player, PlayerX, PlayerY)
+                    # coin.rect.center = PlayerX, PlayerY
+                    print(player, PlayerX, PlayerY)
+                    Levels.update(player, PlayerX, PlayerY, 123)
                     level_sprites.draw(screen)
                     cursor_sprite.draw(screen)
-                    Levels.draw(screen)
+                    Levels.draw()
                     pygame.display.flip()
                     screen.fill("BLACK")
                     pygame.time.Clock().tick(FPS)
