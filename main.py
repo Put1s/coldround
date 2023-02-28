@@ -2,13 +2,13 @@ import os
 import sys
 import pygame
 import math
+import random
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QMainWindow
 
 
 def load_image(name, colorKey=None):
-    print(type(name), name)
     fullname = os.path.join("data", name)
     image = pygame.image.load(fullname)
 
@@ -133,10 +133,11 @@ class Game(QMainWindow):
 
             def set_image(self, image_):
                 self.entity.image = load_image(image_, -1)
-                self.entity.rect = self.entity.image.get_rect()
-                self.entity.mask = pygame.mask.from_surface(self.entity.image)
+                # self.entity.rect = self.entity.image.get_rect()
+                # self.entity.mask = pygame.mask.from_surface(self.entity.image)
 
             def update_pos(self, PlayerX_, PlayerY_):
+                # self.entity.rect.center = self.x, self.y
                 self.entity.rect.center = self.x + PlayerX_, self.y + PlayerY_
 
         class Coin(Entity):
@@ -161,8 +162,32 @@ class Game(QMainWindow):
                 self.set_image("spikes.png")
 
         class Level:
-            def __init__(self, level_id_, coins_, spikes_):
-                self.id = level_id_
+            def __init__(self, level_name_, size_, coins_, spikes_):
+                self.name = level_name_
+                self.size = size_
+                self.coins = coins_
+                self.spikes = spikes_
+                self.sprites_group = pygame.sprite.Group()
+                for coin_ in coins_:
+                    self.sprites_group.add(coin_.entity)
+                for spikes_ in self.spikes:
+                    self.sprites_group.add(spikes_.entity)
+
+            def set_coins(self, coins_):
+                for coin_ in self.coins:
+                    self.sprites_group.remove(coin_.entity)
+                self.coins = coins_
+                for coin_ in self.coins:
+                    self.sprites_group.add(coin_.entity)
+
+            def set_spikes(self, spikes_):
+                for spike_ in self.spikes:
+                    self.sprites_group.remove(spike_.entity)
+                self.spikes = spikes_
+                for spike_ in self.spikes:
+                    self.sprites_group.add(spike_.entity)
+
+            def reset(self, coins_, spikes_):
                 self.coins = coins_
                 self.spikes = spikes_
                 self.sprites_group = pygame.sprite.Group()
@@ -192,19 +217,21 @@ class Game(QMainWindow):
 
         class Levels:
             def __init__(self, start_level_):
-                self.level = start_level_
-                self.levels = [
-                    Level(
-                        1,
-                        [Coin(228, 1337), Coin(1337, 228)],
-                        [Spikes(100, 2000), Spikes(-225, 1000)]
-                    ),
-                    Level(
-                        2,
-                        [Coin(1000, 1000), Coin(0, 0), Coin(50, 0), Coin(100, 0)],
-                        [Spikes(-500, 2000), Spikes(2000, 2000), Spikes(2000, 2050), Spikes(2000, 2100)]
-                    ),
+                self.level = start_level_ - 1
+                self.configure = [
+                    ("First floor", (1, 1), 20, 10)
+                    # ("Second floor", (4254, 2646), 100, 30)
                 ]
+                self.levels = list()
+                for level_ in self.configure:
+                    self.levels.append(
+                        Level(level_[0], level_[1],
+                              [Coin(random.randint(0, level_[1][0]), random.randint(0, level_[1][1]))
+                               for i in range(level_[2])],
+                              [Spikes(random.randint(0, level_[1][0]), random.randint(0, level_[1][1]))
+                               for i in range(level_[3])]
+                              )
+                    )
 
             def next(self):
                 self.level += 1
@@ -213,7 +240,22 @@ class Game(QMainWindow):
                 self.level -= 1
 
             def set_level(self, level_):
-                self.level = level_
+                self.level = level_ - 1
+
+            def reset(self):
+                for i, level_ in enumerate(self.levels):
+                    level_.set_coins(
+                        [Coin(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
+                         for j in range(self.configure[i][2])])
+                    level_.set_spikes(
+                        [Spikes(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
+                         for j in range(self.configure[i][3])])
+                    # level_.reset(
+                    #     [Coin(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
+                    #      for j in range(self.configure[i][2])],
+                    #     [Spikes(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
+                    #      for j in range(self.configure[i][3])]
+                    # )
 
             def update(self, player_, PlayerX_, PlayerY_):
                 self.levels[self.level].update(PlayerX_, PlayerY_)
@@ -235,7 +277,6 @@ class Game(QMainWindow):
             state = ["main_menu", 1]  # ["main_menu"/"game"/"final_menu", level]
 
             while running:
-                pygame.mixer.music.play(loops=-1)
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
@@ -246,6 +287,9 @@ class Game(QMainWindow):
                         state[0] = "game"
                         cursor.image = cursor.image = load_image("cursor2.png", -1)
                         cursor.rect = cursor.image.get_rect()
+                        pygame.mixer.music.unload()
+                        pygame.mixer.music.load(ambient)
+                        pygame.mixer.music.play(-1)
 
                 if pygame.mouse.get_focused():
                     pygame.mouse.set_visible(False)
@@ -302,6 +346,10 @@ class Game(QMainWindow):
                             door.mask = pygame.mask.from_surface(door.image)
                         else:
                             state[0] = "final_menu"
+                            pygame.mixer.music.unload()
+                            pygame.mixer.music.load(final_menu_music)
+                            pygame.mixer.music.play(-1)
+                            floors.next()
 
                     MouseRelativeX, MouseRelativeY = MouseX - (windowWidth // 2), MouseY - (
                             windowHeight // 2)  # код поворота игрока
@@ -316,7 +364,10 @@ class Game(QMainWindow):
                     door.rect.center = PlayerX, PlayerY
                     cursor.rect.center = MouseX + 2, MouseY + 2
                     # coin.rect.center = PlayerX, PlayerY
-                    floors.update(player, PlayerX, PlayerY)
+                    if floors.update(player, PlayerX, PlayerY):
+                        floors.set_level(1)
+                        floors.reset()
+                        PlayerX, PlayerY = 850, 550
                     level_sprites.draw(screen)
                     cursor_sprite.draw(screen)
                     floors.draw(screen)
