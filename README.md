@@ -1,2 +1,2 @@
 # Coldround Game
-(based on Hotline Miami)
+Игра на Pygame
