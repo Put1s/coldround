@@ -122,6 +122,13 @@ class Game(QMainWindow):
         # coin.rect.center = 123123, 123123
         # level_sprites.add(coin)
 
+        font = pygame.font.Font(None, 72)
+        score = 0
+        text = font.render("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", True, (255, 0, 0))
+        place = text.get_rect(
+            center=(200, 150))
+        screen.blit(text, place)
+
         class Entity:
             def __init__(self, x_, y_):
                 self.entity = pygame.sprite.Sprite()
@@ -143,6 +150,7 @@ class Game(QMainWindow):
         class Coin(Entity):
             def __init__(self, x_, y_):
                 super().__init__(x_, y_)
+                self.exists = True
                 self.state = 0
                 self.states = 6
                 self.animate()
@@ -162,12 +170,16 @@ class Game(QMainWindow):
                 self.set_image("spikes.png")
 
         class Level:
-            def __init__(self, level_name_, left_up_, right_down_, coins_, spikes_):
+            def __init__(self, level_name_, left_up_, right_down_, coins_, spikes_, floor_image_):
                 self.name = level_name_
                 self.left_up = left_up_
                 self.right_down = right_down_
                 self.coins = coins_
                 self.spikes = spikes_
+                self.floor = pygame.sprite.Sprite()
+                self.floor.image = load_image(floor_image_, -1)
+                self.floor.rect = floor.image.get_rect()
+                self.floor.mask = pygame.mask.from_surface(floor.image)
                 self.sprites_group = pygame.sprite.Group()
                 for coin_ in coins_:
                     self.sprites_group.add(coin_.entity)
@@ -204,39 +216,47 @@ class Game(QMainWindow):
                 for spikes_ in self.spikes:
                     spikes_.update_pos(PlayerX_, PlayerY_)
 
-            def collide(self, player_):
+            def collide(self, player_): # -> pair: score(int), death(True/False)
+                score_ = 0
                 for coin_ in self.coins:
-                    if pygame.sprite.collide_mask(player_, coin_.entity):
+                    if pygame.sprite.collide_mask(player_, coin_.entity) and coin_.exists:
                         coin_.pick_up()
+                        coin_.exists = False
+                        score_ += 1
                 for spikes_ in self.spikes:
                     if pygame.sprite.collide_mask(player_, spikes_.entity):
-                        return True
-                return False
+                        return score_, True
+                return score_, False
 
             def draw(self, screen_):
                 self.sprites_group.draw(screen_)
 
         class Levels:
-            def __init__(self, start_level_):
+            def __init__(self, start_level_, floors_images_):
+                self.score = 0
                 self.level = start_level_ - 1
                 self.configure = [
                     # имя, левый верхний угол и правый нижний угол спавна энтити, кол-во монет, кол-во шипов
                     # TODO: подобрать координаты спавна энтити чтобы на двух этажах норм спавнилось
                     ("First floor", (0, 0), (500, 800), 20, 10),
-                    ("Second floor", (0, 0), (4254, 2646), 100, 30)
+                    ("Second floor", (-2000, -100), (2000, 2000), 100, 30)  # (4254, 2646)
                 ]
-                self.levels = list()
-                for level_ in self.configure:
-                    self.levels.append(
-                        Level(level_[0], level_[1], level_[2],
-                              [Coin(random.randint(level_[1][0], level_[2][0]),
-                                    random.randint(level_[1][1], level_[2][1]))
-                               for i in range(level_[3])],
-                              [Spikes(random.randint(level_[1][0], level_[2][0]),
-                                      random.randint(level_[1][1], level_[2][1]))
-                               for i in range(level_[4])]
-                              )
-                    )
+                self.levels = [Level("void", 0, 0, [], [], floors_images_[i]) for i in range(len(floors_images_))]
+                self.reset()
+                # for level_ in self.configure:
+                #     self.levels.append(
+                #         Level(level_[0], level_[1], level_[2],
+                #               [Coin(random.randint(level_[1][0], level_[2][0]),
+                #                     random.randint(level_[1][1], level_[2][1]))
+                #                for i in range(level_[3]) if],
+                #               [Spikes(random.randint(level_[1][0], level_[2][0]),
+                #                       random.randint(level_[1][1], level_[2][1]))
+                #                for i in range(level_[4])]
+                #               )
+                #     )
+
+            def get_score(self):
+                return str(self.score)
 
             def next(self):
                 self.level += 1
@@ -249,16 +269,24 @@ class Game(QMainWindow):
 
             def reset(self):
                 for i, level_ in enumerate(self.levels):
-                    level_.set_coins(
-                        [Coin(random.randint(self.configure[i][1][0], self.configure[i][2][0]),
-                              random.randint(self.configure[i][1][1], self.configure[i][2][1]))
-                         for j in range(self.configure[i][3])]
-                    )
-                    level_.set_spikes(
-                        [Spikes(random.randint(self.configure[i][1][0], self.configure[i][2][0]),
-                                random.randint(self.configure[i][1][1], self.configure[i][2][1]))
-                         for j in range(self.configure[i][4])]
-                    )
+                    coins_ = list()
+                    for j in range(self.configure[i][3]):
+                        x_, y_ = random.randint(self.configure[i][1][0], self.configure[i][2][0]), \
+                            random.randint(self.configure[i][1][1], self.configure[i][2][1])
+                        coin_ = Coin(x_, y_)
+                        if not pygame.sprite.collide_mask(coin_.entity, level_.floor):
+                            coins_.append(coin_)
+                        # coins_.append(coin_)
+                    level_.set_coins(coins_)
+                    spikes_ = list()
+                    for j in range(self.configure[i][4]):
+                        x_, y_ = random.randint(self.configure[i][1][0], self.configure[i][2][0]), \
+                            random.randint(self.configure[i][1][1], self.configure[i][2][1])
+                        spike_ = Spikes(x_, y_)
+                        if not pygame.sprite.collide_mask(spike_.entity, level_.floor):
+                            spikes_.append(spike_)
+                        # spikes_.append(spike_)
+                    level_.set_spikes(spikes_)
                     # level_.reset(
                     #     [Coin(random.randint(0, self.configure[i][1][0]), random.randint(0, self.configure[i][1][1]))
                     #      for j in range(self.configure[i][2])],
@@ -268,12 +296,14 @@ class Game(QMainWindow):
 
             def update(self, player_, PlayerX_, PlayerY_):
                 self.levels[self.level].update(PlayerX_, PlayerY_)
-                return self.levels[self.level].collide(player_)
+                t_ = self.levels[self.level].collide(player_)
+                self.score += t_[0]
+                return t_[1]
 
             def draw(self, screen_):
                 self.levels[self.level].draw(screen_)
 
-        floors = Levels(1)
+        floors = Levels(1, ["floor.png", "floor2.png"])
 
         if __name__ == "__main__":
             PlayerX, PlayerY = 850, 550
@@ -358,7 +388,7 @@ class Game(QMainWindow):
                             pygame.mixer.music.unload()
                             pygame.mixer.music.load(final_menu_music)
                             pygame.mixer.music.play(-1)
-                            floors.next()
+                        floors.next()
 
                     MouseRelativeX, MouseRelativeY = MouseX - (windowWidth // 2), MouseY - (
                             windowHeight // 2)  # код поворота игрока
@@ -374,12 +404,26 @@ class Game(QMainWindow):
                     cursor.rect.center = MouseX + 2, MouseY + 2
                     # coin.rect.center = PlayerX, PlayerY
                     if floors.update(player, PlayerX, PlayerY):
+                        walls.image = load_image("walls.png", -1)
+                        walls.rect = walls.image.get_rect()
+                        walls.mask = pygame.mask.from_surface(walls.image)
+
+                        door.image = load_image("door.png", -1)
+                        door.rect = door.image.get_rect()
+                        door.mask = pygame.mask.from_surface(door.image)
+
+                        floor.image = load_image("floor.png", -1)
+                        floor.rect = floor.image.get_rect()
                         floors.set_level(1)
                         floors.reset()
                         PlayerX, PlayerY = 850, 550
+                        state[1] = 1
+                        floors.score = 0
                     level_sprites.draw(screen)
                     cursor_sprite.draw(screen)
                     floors.draw(screen)
+                    text = font.render(floors.get_score(), True, (255, 0, 0))
+                    screen.blit(text, (100, 100))
                     pygame.display.flip()
                     screen.fill("BLACK")
                     pygame.time.Clock().tick(FPS)
@@ -389,6 +433,8 @@ class Game(QMainWindow):
                     cursor_sprite.draw(screen)
                     cursor.image = load_image("cursor.png", -1)
                     cursor.rect.center = MouseX, MouseY
+                    text = font.render(floors.get_score(), True, (255, 0, 0))
+                    screen.blit(text, (100, 100))
                     pygame.display.flip()
                     screen.fill("BLACK")
                     pygame.time.Clock().tick(FPS)
